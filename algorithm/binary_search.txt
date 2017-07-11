@@ -1,0 +1,21 @@
+function bs(input,value_to_find){
+  var left = 0
+  var right= input.length-1
+debugger
+  while(left<=right){count++
+    if(left==right)
+      if(input[left]==value_to_find)  return left
+
+    var half=~~((right-left)/2)
+    var middle=left+half
+    if(input[middle]==value_to_find){
+      return middle
+    } else if(value_to_find < input[middle]){
+      right= middle-1
+    }else if(value_to_find > input[middle]){
+      left= middle+1
+    }
+  }
+
+  return -1
+}
