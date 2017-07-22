@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body >
+<div class="fuck">
+  <div class="fuck0">50</div>
+  <div class="fuck1">24&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;74</div>
+  <div class="fuck2">12&nbsp;&nbsp;&nbsp;&nbsp;36&nbsp;&nbsp;&nbsp;&nbsp;62&nbsp;&nbsp;&nbsp;&nbsp;86</div>
+  <div class="fuck3">6&nbsp;18&nbsp;&nbsp;30&nbsp;42&nbsp;&nbsp;56&nbsp;68&nbsp;&nbsp;80&nbsp;92</div>
+</div>
+<style>
+  .fuck{width:600px;background:cyan;text-align:center;}
+</style>
+
+<script>
+
+function Node(data, sdata){
+  this.data=data
+  this.sdata=sdata
+  this.left=null
+  this.right=null
+}
+
+function Tree(){
+  this.root=null
+  this.insert=function(){
+    var insert=(newnode)=>{  
+      var current=this.root
+      var parent;
+      if(this.root==null){
+        this.root=newnode
+        return
+      }else{
+        while(true){
+          parent=current
+          if(current.data>newnode.data){
+            current=current.left
+            if(current==null){
+              parent.left=newnode
+              return
+            }
+          }else{
+            current=current.right
+            if(current==null){
+              parent.right=newnode
+              return
+            }
+          }
+        }
+      }
+    }
+    Array.prototype.forEach.call(arguments,
+      (e)=>{
+        if(Array.isArray(e)){
+          e.forEach((e)=>this.insert(e))
+        }else{
+          insert(e)
+        }
+      }
+    )
+  } 
+  this.find=function(value){
+    var current=this.root
+    while(current.data!=value){
+      if(current.data>value){
+        current=current.left
+      } else {
+        current=current.right
+      }
+      if(current==null){
+        return null
+      }
+    }
+    return current
+  }
+  this.delete=function(value){
+    var current = this.root
+    var parent =this.root
+    var isleft= true
+
+    while(current.data!=value){
+      parent=current
+      if(current.data>value){
+        current=current.left
+        isleft=true
+      }else{
+        current=current.right
+        isleft=false
+      }
+      if(current==null){
+        return false
+      }
+    }
+    
+    if(current.left==null && current.right==null){
+      if(current==this.root){
+        this.root=null
+      }else if(isleft){
+        parent.left=null
+      }else{
+        parent.right=null
+      }
+    }
+
+    else if(current.left==null){
+      if(current==this.root){
+        this.root=current.right
+      }else if(isleft){
+        parent.left=current.right
+      }else{
+        parent.right=current.right
+      }
+    }
+
+    else if(current.right==null){
+      if(current==this.root){
+        this.root=current.left
+      }else if(isleft){
+        parent.left=current.left
+      }else{
+        parent.right=current.left
+      }
+    }
+    
+    else{
+      var successor=this.getsuccessor(current)
+      if(current==this.root){
+        this.root=successor
+      }else if(isleft){
+        parent.left=successor
+      }else{
+        parent.right=successor
+      }
+      successor.left=current.left
+    }
+
+    return true
+
+  }
+  this.getsuccessor=function(delnode){
+    var successorparent=delnode
+    var successor=delnode
+    var current=delnode.right
+    while(current!=null){
+      successorparent=successor
+      successor=current
+      current=current.left
+    }
+    if(successor!=delnode.right){
+      successorparent.left=successor.right
+      successor.right=delnode.right
+    }
+
+    return successor
+  }
+  this.frontorder=function(node){
+    if(node!=null){
+      console.log(node.data+', '+node.sdata)
+      this.frontorder(node.left)
+      this.frontorder(node.right)
+    }
+  }
+  this.inorder=function(node){
+    if(node!=null){
+      this.inorder(node.left)
+      console.log(node.data+', '+node.sdata)
+      this.inorder(node.right)
+    }
+  }
+  this.afterorder=function(node){
+    if(node!=null){
+      this.afterorder(node.left)
+      this.afterorder(node.right)
+      console.log(node.data+', '+node.sdata)
+    }
+  }
+  this.print=function(node){
+    var open=[node]
+    var closed=[]
+    node.level=0
+    while(open.length>0){
+      var e=open.shift()
+      closed.push(e)
+      if(e.left!=null){
+        e.left.level=e.level+1
+        open.push(e.left)
+      }
+      if(e.right!=null){
+        e.right.level=e.level+1
+        open.push(e.right)
+      }
+    }
+    for(var i=0; i<4; i++){
+      var str=''
+      closed.forEach((e)=>{
+        if(e.level==i)
+          str+=" "+e.data
+      })
+      console.log(str)
+    }
+  }
+}
+
+var t=new Tree
+t.insert( new Node(50,'Ross'),
+          new Node(24,'Pearson'),
+          new Node(74,'Jessica'),
+          new Node(12,'Specter'),
+          new Node(36,'Harvey'),
+          new Node(62,'Louis'),
+          new Node(86,'Litt'),
+          new Node(6, 'Daniel') ,
+          new Node(18,'Jordan'),
+          new Node(30,'Robert'),
+          new Node(42,'Zane'),
+          new Node(56,'Hardman'),
+          new Node(68,'Donna'),
+          new Node(80,'Katrina'),
+          new Node(92,'Mike'))
+t.print(t.root)
+</script>
+</body>
+</html>
