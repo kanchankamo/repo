@@ -1,0 +1,41 @@
+function getSal(val){
+  console.log('getSal('+val+')')
+  return new Promise(resolve=>{
+    setTimeout(()=>{
+      resolve(val)
+    })
+  })
+}
+function getSalTax(sal){
+  return new Promise(resolve=>{
+    console.log('getSalTax('+sal+')')
+    setTimeout(()=>{
+      resolve(sal * .75)
+    })
+  })
+}
+function getSalRent(tax){
+  return new Promise(resolve=>{
+    console.log('getSalRent('+tax+')')
+    setTimeout(()=>{
+      resolve(tax - 5000)
+    })
+  })
+}
+runGenerator(function* getDisposableIncome(){
+  const sal = yield getSal(33000); console.log(sal)
+  const tax = yield getSalTax(sal); console.log(tax)
+  const rent = yield getSalRent(tax); console.log(rent)
+})
+function runGenerator(generator){
+  const it = generator()
+  let ret
+  !function resolve(val){
+    ret = it.next(val)
+    if(!ret.done){
+      if(ret.value instanceof Promise && 'then' in ret.value){
+        ret.value.then(resolve)
+      }
+    }
+  }()
+}
