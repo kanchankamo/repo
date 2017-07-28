@@ -1,0 +1,8 @@
+function f(n){
+  f.a = f.a || [1, 1]
+  if(f.a.length > n) return f.a[n]
+  for(var i=f.a.length; i<=n; i++){
+    f.a.push( f.a[i-1]+f.a[i-2] )
+  }
+  return f.a[n]
+}
