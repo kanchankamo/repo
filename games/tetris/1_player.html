@@ -1,0 +1,275 @@
+<!DOCTYPE html> <html> <head></head> <body > 
+<style>body{-background:#202028;text-align:center;}</style>
+<div>score:<span id=score></span></div>
+<canvas id=canvas width=240 height=400></canvas>
+<script>
+const context=canvas.getContext('2d')
+context.scale(20,20)
+const arena = new Arena()
+const player=new Player()
+const render = new Render()
+function Player(){
+  this.pos={x:5,y:5}
+  this.matrix=null
+  this.score=0
+  score.innerText=this.score
+
+  this.move=function move(dir){
+    this.pos.x+=dir
+    if(arena.collide(this)){
+      this.pos.x-=dir
+    }
+  }
+  this.drop=function drop(){
+    this.pos.y++
+    render.clearDropCounter()
+    if(arena.collide(this)){
+      this.pos.y--
+      arena.merge(this)
+      arena.sweep()
+      this.updateScore()
+      this.reset()
+    }
+  }
+  this.descend=function(){
+    if(this.pos.y<2) return
+    this.drop()
+  }
+  this.updateScore=function(){
+    score.innerText=this.score
+  }
+  this.createPiece=function(type){
+    if (type === 'I') {
+      return [
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+      ];
+    } else if (type === 'L') {
+      return [
+        [0, 2, 0],
+        [0, 2, 0],
+        [0, 2, 2],
+      ];
+    } else if (type === 'J') {
+      return [
+        [0, 3, 0],
+        [0, 3, 0],
+        [3, 3, 0],
+      ];
+    } else if (type === 'O') {
+      return [
+        [4, 4],
+        [4, 4],
+      ];
+    } else if (type === 'Z') {
+      return [
+        [5, 5, 0],
+        [0, 5, 5],
+        [0, 0, 0],
+      ];
+    } else if (type === 'S') {
+      return [
+        [0, 6, 6],
+        [6, 6, 0],
+        [0, 0, 0],
+      ];
+    } else if(type=='T'){
+      return [
+        [0, 7, 0],
+        [7, 7, 7],
+        [0, 0, 0],
+      ]
+    }
+  }
+  this.reset=function(){
+    const pieces='ILJOTSZ'
+    this.matrix=this.createPiece(pieces[ pieces.length * Math.random() | 0 ])
+    //this.matrix=this.createPiece('O')
+    this.pos.y=0
+    this.pos.x=(arena.matrix[0].length / 2 | 0)-(this.matrix[0].length / 2 | 0)
+     
+    //if pieces reach the top, clear all the pieces inside the arena
+    if(arena.collide(this)){
+      arena.matrix.forEach(row=>row.fill(0))
+      this.score=0
+      this.updateScore()
+    }
+  }
+  this.rotate=function (dir){
+    const pos= this.pos.x
+    rotate(this.matrix,dir)
+    let offset=1
+    while(arena.collide(this)){
+      player.pos.x+=offset
+      offset = -(offset + (offset > 0 ? 1 : -1))
+      if(offset > this.matrix[0].length){
+        rotate(this.matrix,-dir)
+        this.pos.x=pos
+        return
+      }
+    }
+  }
+  function rotate(matrix,dir){
+    for(let y=0; y<matrix.length; y++){
+      for(let x=0; x<y; x++){
+        [matrix[x][y],matrix[y][x]]=[matrix[y][x],matrix[x][y]]
+      }
+    }
+    if(dir>0){
+      matrix.forEach(row=>row.reverse())
+    }else{
+      matrix.reverse()
+    }
+  }
+  this.reset()
+}
+function Arena(){
+  function createMatrix(w,h){
+    const matrix=[]
+    while(h--){
+      matrix.push(new Array(w).fill(0))
+    }
+    return matrix
+  }
+  this.matrix=createMatrix(12,20)
+  this.merge=function merge(player){
+    player.matrix.forEach((row, y)=>{
+      row.forEach((col, x)=>{
+        if(col!=0){
+          this.matrix[player.pos.y+y][player.pos.x+x]=col
+        }
+      })
+    })
+  }
+  this.collide=function collide(player){
+    const [m,p]=[player.matrix,player.pos]
+    for(let y=0; y<m.length; y++){
+      for(let x=0; x<m[y].length; x++){
+        if(m[y][x]!==0 && (!this.matrix[y+p.y] || (this.matrix[y+p.y] && this.matrix[y+p.y][x+p.x]!==0)) ){
+         return true
+        }
+      }
+    }
+    return false
+  }
+  this.sweep=function arenaSweep() {
+    let rowCount=1
+    outer: for (let y = this.matrix.length -1; y > 0; --y) {
+      for (let x = 0; x < this.matrix[y].length; ++x) {
+        if (this.matrix[y][x] === 0) {
+           continue outer;
+        }
+      }
+
+      const row = this.matrix.splice(y, 1)[0].fill(0);
+      this.matrix.unshift(row);
+      y++;
+
+      player.score+=rowCount*10
+      rowCount*=2
+    }
+ }
+  
+}
+function Render(){
+  const colors = [
+   null,
+   '#FF0D72',
+   '#0DC2FF',
+   '#0DFF72',
+   '#F538FF',
+   '#FF8E0D',
+   '#FFE138',
+   '#3877FF',
+ ];
+  function drawMatrix(matrix,offset){
+    matrix.forEach((row,y)=>{
+      row.forEach((col,x)=>{
+        if(col!=0){
+          context.fillStyle=colors[col]
+          context.fillRect(x+offset.x,y+offset.y,1,1)
+        }
+      })
+    })
+  }
+  
+  function draw(){
+    context.clearRect(0,0,canvas.width,canvas.height)
+    context.fillStyle='black'
+    context.fillRect(0,0,canvas.width,canvas.height)
+    context.strokeStyle='white'
+    context.lineWidth=.1
+    for(let x=0;x<24;x++){
+      context.moveTo(x,0)
+      context.lineTo(x,20)
+    }
+    for(let y=0;y<40;y++){
+      context.moveTo(0,y)
+      context.lineTo(20,y)
+    }
+    context.stroke()
+    drawMatrix(arena.matrix,{x:0,y:0})
+    drawMatrix(player.matrix,player.pos)
+  }
+
+  let start=0
+  const dropInterval=1000
+  let dropCounter=0
+  function update(time=0){
+    const delta=time-start
+    start=time
+    dropCounter+=delta
+    if(dropCounter>dropInterval){
+      player.drop()
+    }
+    draw()
+    requestAnimationFrame(update)
+  }
+  update()
+  this.clearDropCounter=function(){
+    dropCounter=0
+  }
+}
+    var repeatCount=0
+document.addEventListener('keydown',function(e){
+  e.preventDefault()
+  switch(e.which){
+    case 37://left arrow
+      player.move(-1)
+      break
+    case 39://right arrow
+      player.move(1)
+      break
+    case 40://down arrow
+      player.descend()
+      break
+    case 81://Q
+      player.rotate(1)
+      break;
+    case 87://W
+      player.rotate(-1)
+      break;
+    default:
+      break
+  }
+})
+
+
+</script>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
