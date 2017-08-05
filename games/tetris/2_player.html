@@ -1,0 +1,321 @@
+<!DOCTYPE html> <html> <head></head> <body > 
+<style>body{text-align:center;justify-content:space-around;display:flex;background:#202028;}</style>
+
+<div class="player">
+  <div class=score>score:<span>0</span></div>
+  <canvas class=tetris width=240 height=400></canvas>
+</div>
+<div class="player">
+  <div class=score>score:<span>0</span></div>
+  <canvas class=tetris width=240 height=400></canvas>
+</div>
+
+<style>.player{-margin:auto;}</style>
+<style>.score{color:white;}</style>
+<style>.tetris{border:1px solid white;}</style>
+
+<script>
+class Player{
+  constructor(tetris){
+    this.DROP_SLOW=1000
+    this.DROP_FAST=80
+
+    this.tetris=tetris
+    this.arena=tetris.arena
+
+    this.pos={x:0,y:0}
+    this.matrix=null
+    this.score=0
+
+    this.dropInterval=1000
+    this.dropCounter=0
+
+    this.reset()
+  }
+
+  update(delta){
+    if(this.dropCounter>this.dropInterval){
+      this.drop()
+    }
+  }
+  move(dir){
+    this.pos.x+=dir
+    if(this.arena.collide(this)){
+      this.pos.x-=dir
+    }
+  }
+  drop(){
+    this.pos.y++
+    this.clearDropCounter()
+    if(this.arena.collide(this)){
+      this.pos.y--
+      this.arena.merge(this)
+      this.score+=this.arena.sweep()
+      this.tetris.updateScore(this.score)
+      this.reset()
+    }
+  }
+  clearDropCounter(){
+    this.dropCounter=0
+  }
+  descend(){
+    if(this.pos.y==0) return
+    this.drop()
+  }
+  createPiece(type){
+    if (type === 'I') {
+      return [
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 0, 0],
+      ];
+    } else if (type === 'L') {
+      return [
+        [0, 2, 0],
+        [0, 2, 0],
+        [0, 2, 2],
+      ];
+    } else if (type === 'J') {
+      return [
+        [0, 3, 0],
+        [0, 3, 0],
+        [3, 3, 0],
+      ];
+    } else if (type === 'O') {
+      return [
+        [4, 4],
+        [4, 4],
+      ];
+    } else if (type === 'Z') {
+      return [
+        [5, 5, 0],
+        [0, 5, 5],
+        [0, 0, 0],
+      ];
+    } else if (type === 'S') {
+      return [
+        [0, 6, 6],
+        [6, 6, 0],
+        [0, 0, 0],
+      ];
+    } else if(type=='T'){
+      return [
+        [0, 7, 0],
+        [7, 7, 7],
+        [0, 0, 0],
+      ]
+    }
+  }
+  reset(){
+    const pieces='ILJOTSZ'
+    this.matrix=this.createPiece(pieces[ pieces.length * Math.random() | 0 ])
+    //this.matrix=this.createPiece('O')
+    this.pos.y=0
+    this.pos.x=(this.arena.matrix[0].length / 2 | 0)-(this.matrix[0].length / 2 | 0)
+     
+    //if pieces reach the top, clear all the pieces inside the this.arena
+    if(this.arena.collide(this)){
+      this.arena.clear()
+      this.score=0
+      this.tetris.updateScore(this.score)
+    }
+  }
+  rotate (dir){
+    const pos= this.pos.x
+    this.rotateMatrix(this.matrix,dir)
+    let offset=1
+    while(this.arena.collide(this)){
+      this.pos.x+=offset
+      offset = -(offset + (offset > 0 ? 1 : -1))
+      if(offset > this.matrix[0].length){
+        this.rotateMatrix(this.matrix,-dir)
+        this.pos.x=pos
+        return
+      }
+    }
+  }
+  rotateMatrix(matrix,dir){
+    for(let y=0; y<matrix.length; y++){
+      for(let x=0; x<y; x++){
+        [matrix[x][y],matrix[y][x]]=[matrix[y][x],matrix[x][y]]
+      }
+    }
+    if(dir>0){
+      matrix.forEach(row=>row.reverse())
+    }else{
+      matrix.reverse()
+    }
+  }
+}
+
+class Arena{
+  constructor(w,h,tetris){
+    this.matrix=[]
+    while(h--){
+      this.matrix.push(new Array(w).fill(0))
+    }
+
+    this.tetris=tetris
+  }
+
+  clear(){
+    this.matrix.forEach(row=>row.fill(0))
+  }
+  merge (player){
+    player.matrix.forEach((row, y)=>{
+      row.forEach((col, x)=>{
+        if(col!=0){
+          this.matrix[player.pos.y+y][player.pos.x+x]=col
+        }
+      })
+    })
+  }
+  collide (player){
+    const [m,p]=[player.matrix,player.pos]
+    for(let y=0; y<m.length; y++){
+      for(let x=0; x<m[y].length; x++){
+        if(m[y][x]!==0 && (!this.matrix[y+p.y] || (this.matrix[y+p.y] && this.matrix[y+p.y][x+p.x]!==0)) ){
+         return true
+        }
+      }
+    }
+    return false
+  }
+  sweep() {
+    let rowCount=1
+    let score=0
+    outer: for (let y = this.matrix.length -1; y > 0; --y) {
+      for (let x = 0; x < this.matrix[y].length; ++x) {
+        if (this.matrix[y][x] === 0) {
+           continue outer;
+        }
+      }
+
+      const row = this.matrix.splice(y, 1)[0].fill(0);
+      this.matrix.unshift(row);
+      y++;
+
+      score+=rowCount*10
+      rowCount*=2
+    }
+
+    return score
+  }
+}
+
+ class Tetris{
+  constructor(element){
+    this.canvas = element.querySelector('.tetris')
+    this.scoreTag = element.querySelector('.score > span')
+    this.context = this.canvas.getContext('2d')
+    this.context.scale(20,20)
+
+    this.arena=new Arena(12, 20)
+    this.player=new Player(this)
+
+    this.colors = [
+      null,
+      '#FF0D72',
+      '#0DC2FF',
+      '#0DFF72',
+      '#F538FF',
+      '#FF8E0D',
+      '#FFE138',
+      '#3877FF',
+    ];
+    
+    this.start=0
+    this.update()
+  }
+  updateScore(score){
+    this.scoreTag.innerText=score
+  }
+  update(time=0){
+    const delta=time-this.start
+    this.start=time
+    this.player.dropCounter+=delta
+    this.player.update()
+    this.draw()
+    requestAnimationFrame(this.update.bind(this))
+  }
+  drawGrid(){
+    this.context.strokeStyle='#444'
+    this.context.beginPath()
+    for(let x=0;x<24;x++){
+      this.context.moveTo(x,0)
+      this.context.lineTo(x,20)
+    }
+    for(let y=0;y<40;y++){
+      this.context.moveTo(0,y)
+      this.context.lineTo(20,y)
+    }
+  }
+  drawMatrix(matrix,offset){
+    matrix.forEach((row,y)=>{
+      row.forEach((col,x)=>{
+        if(col!=0){
+          this.context.fillStyle=this.colors[col]
+          this.context.fillRect(x+offset.x,y+offset.y,1,1)
+        }
+      })
+    })
+  }
+  draw(){
+    this.context.clearRect(0,0,this.canvas.width,this.canvas.height)
+    this.context.fillStyle='black'
+    this.context.fillRect(0,0,this.canvas.width,this.canvas.height)
+    this.context.strokeStyle='white'
+    this.context.lineWidth=.1
+    this.drawGrid()
+    this.context.stroke()
+    this.drawMatrix(this.arena.matrix,{x:0,y:0})
+    this.drawMatrix(this.player.matrix,this.player.pos)
+  }
+}
+
+const tetrisArr=[]
+
+const playerDom = document.querySelectorAll('.player');
+playerDom.forEach((element)=>{
+  const tetris = new Tetris(element)
+  tetrisArr.push(tetris)
+})
+
+const keyListener = (e)=>{
+  e.preventDefault();
+  [ 
+    [65, 68, 69, 81, 83,],//a,d,q,e,s,
+    [72, 75, 73, 89, 74,],//h,k,y,i,j,
+  ].forEach((key, index)=>{
+    const player=tetrisArr[index].player
+    if(e.type=='keydown'){
+      if(e.keyCode==key[0]){
+        player.move(-1)
+      }else if(e.keyCode==key[1]){
+        player.move(1)
+      }else if(e.keyCode==key[2]){
+        player.rotate(1)
+      }else if(e.keyCode==key[3]){
+        player.rotate(-1)
+      }
+    }
+
+    if(e.keyCode==key[4]){
+      if(e.type=='keydown'){
+        if(player.dropInterval!==player.DROP_FAST){
+          player.drop()
+          player.dropInterval=player.DROP_FAST          
+        }
+      }else{
+        player.dropInterval=player.DROP_SLOW
+      }
+    }
+  })
+}
+
+document.addEventListener('keydown',keyListener)
+document.addEventListener('keyup',keyListener)
+
+</script>
+</body></html>
