@@ -201,6 +201,7 @@ function Render(){
     context.fillRect(0,0,canvas.width,canvas.height)
     context.strokeStyle='white'
     context.lineWidth=.1
+    context.beginPath()
     for(let x=0;x<24;x++){
       context.moveTo(x,0)
       context.lineTo(x,20)
