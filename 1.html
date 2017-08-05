@@ -1,1 +1,26 @@
-haha
+<input type=file onchange='openfile(event)'>
+<img id=img src="">
+<script>
+  function openfile(e){
+    var objectURL = URL.createObjectURL(e.target.files[0])
+    console.log(objectURL)
+    img.src=objectURL
+    img.onload=function(){
+      URL.revokeObjectURL(objectURL)
+    }
+    // var img = document.createElement('img')
+    // img.src=objectURL
+    // img.onload=function(){
+    //   URL.revokeObjectURL(objectURL)
+    // }
+    // img.style.width='60px'
+    // img.style.height='60px'
+    // document.body.appendChild(img)
+    
+    // var reader=new FileReader
+    // reader.readAsDataURL(e.target.files[0])
+    // reader.onload=function(){
+    //   console.log(reader.result)
+    // }
+  }
+</script>
